@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Agent Gateway — Monitor and control your AI agents in real-time">
+  <title>Agent Gateway</title>
+  <link rel="stylesheet" href="/ui/styles.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+</head>
+<body>
+  <!-- Header -->
+  <header class="app-header">
+    <div class="header-inner">
+      <div class="header-brand">
+        <div class="header-logo">⚡</div>
+        <h1 class="header-title">Agent Gateway <span>v0.1</span></h1>
+      </div>
+      <div class="header-status">
+        <div id="ws-badge" class="connection-badge disconnected">
+          <span class="pulse-dot"></span>
+          <span id="ws-label">Connecting…</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="main-container">
+    <!-- Stats Bar -->
+    <div class="stats-bar">
+      <div class="stat-card indigo">
+        <div class="stat-label">Agent Status</div>
+        <div class="stat-value" id="stat-agent">—</div>
+        <div class="stat-meta" id="stat-agent-meta"></div>
+      </div>
+      <div class="stat-card emerald">
+        <div class="stat-label">Messages Sent</div>
+        <div class="stat-value" id="stat-messages">0</div>
+        <div class="stat-meta" id="stat-messages-meta"></div>
+      </div>
+      <div class="stat-card amber">
+        <div class="stat-label">Active Sessions</div>
+        <div class="stat-value" id="stat-sessions">0</div>
+        <div class="stat-meta" id="stat-sessions-meta"></div>
+      </div>
+      <div class="stat-card cyan">
+        <div class="stat-label">Uptime</div>
+        <div class="stat-value" id="stat-uptime">0s</div>
+        <div class="stat-meta" id="stat-uptime-meta"></div>
+      </div>
+    </div>
+
+    <!-- Dashboard Grid -->
+    <div class="dashboard-grid">
+      <!-- Left column: Agent + Terminal -->
+      <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+        <!-- Agent Status Card -->
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title"><span class="icon">🤖</span> Agent</h2>
+            <span class="status-badge" id="agent-badge">—</span>
+          </div>
+          <div class="card-body">
+            <div class="agent-hero">
+              <div class="agent-avatar" id="agent-avatar">🤖</div>
+              <div class="agent-info">
+                <h3 id="agent-cli">—</h3>
+                <div class="agent-meta">
+                  <span class="agent-meta-item">Session: <strong id="agent-session">—</strong></span>
+                  <span class="agent-meta-item">Started: <strong id="agent-started">—</strong></span>
+                  <span class="agent-meta-item">Messages: <strong id="agent-msg-count">0</strong></span>
+                </div>
+              </div>
+            </div>
+            <div class="agent-controls">
+              <button class="btn btn-primary" id="btn-restart" onclick="restartAgent()">↻ Restart</button>
+              <button class="btn" id="btn-health" onclick="checkHealth()">♥ Health Check</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Terminal Card -->
+        <div class="card" style="flex: 1;">
+          <div class="card-header">
+            <h2 class="card-title"><span class="icon">▸</span> Live Terminal</h2>
+            <button class="btn" onclick="refreshTerminal()" style="font-size: 0.75rem; padding: 4px 10px;">⟳ Refresh</button>
+          </div>
+          <div class="terminal-wrap">
+            <div class="terminal-output" id="terminal-output">
+              <div class="terminal-empty">Agent not started. Terminal output will appear here.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right column: Activity + Sessions + Cron -->
+      <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+        <!-- Activity Feed -->
+        <div class="card" style="flex: 1;">
+          <div class="card-header">
+            <h2 class="card-title"><span class="icon">📡</span> Activity</h2>
+            <span style="font-size: 0.72rem; color: var(--text-muted);" id="activity-count">0 events</span>
+          </div>
+          <div class="card-body no-pad">
+            <ul class="activity-feed" id="activity-feed">
+              <li class="empty-state"><span class="icon">📡</span>No activity yet. Events will stream in real-time.</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Sessions -->
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title"><span class="icon">💬</span> Sessions</h2>
+            <span style="font-size: 0.72rem; color: var(--text-muted);" id="sessions-header-count">0</span>
+          </div>
+          <div class="card-body no-pad">
+            <ul class="session-list" id="session-list">
+              <li class="empty-state"><span class="icon">💬</span>No active sessions</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Cron Jobs -->
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title"><span class="icon">⏰</span> Cron Jobs</h2>
+          </div>
+          <div class="card-body no-pad">
+            <ul class="cron-list" id="cron-list">
+              <li class="empty-state"><span class="icon">⏰</span>No scheduled jobs</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="/ui/dashboard.js"></script>
+</body>
+</html>

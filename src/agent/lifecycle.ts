@@ -13,7 +13,7 @@ import {
 
 const log = createLogger("agent/lifecycle");
 
-const DEFAULT_SESSION_NAME = "agent-orchestrator-main";
+const DEFAULT_SESSION_NAME = "agent-gateway-main";
 const HEALTH_CHECK_INTERVAL_MS = 30_000;
 const RESTART_DELAY_MS = 5_000;
 

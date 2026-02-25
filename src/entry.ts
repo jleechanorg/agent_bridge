@@ -7,7 +7,7 @@ import { formatError } from "./utils.js";
 // Load .env file
 dotenv.config({ path: ".env" });
 
-process.title = "agent-orchestrator";
+process.title = "agent-gateway";
 
 // Global error handlers
 process.on("uncaughtException", (error) => {

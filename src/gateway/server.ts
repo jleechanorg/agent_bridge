@@ -1,13 +1,19 @@
 import express from "express";
 import http from "node:http";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import type { AgentOrchestratorConfig } from "../config/types.js";
 import { AgentLifecycle } from "../agent/lifecycle.js";
+import { captureSessionOutput } from "../agent/bridge.js";
 import { createAuthMiddleware } from "./auth.js";
 import { SessionStore } from "./sessions.js";
 import { CronService } from "./cron.js";
 import { createWebSocketServer, type WsBroadcaster } from "./websocket.js";
 import { createLogger } from "../logger.js";
 import { formatError } from "../utils.js";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const log = createLogger("gateway/server");
 
@@ -25,20 +31,36 @@ export async function startGatewayServer(
 ): Promise<GatewayServer> {
     const { gateway: gatewayCfg } = config;
 
-    // Initialize agent
+    // Initialize agent with port-unique session name
     const agent = new AgentLifecycle({
         config: config.agent,
         mcpServers: config.mcpServers,
+        sessionName: `agent-gateway-${gatewayCfg.port}`,
     });
 
     // Initialize session store
     const sessions = new SessionStore();
 
+    // Activity log (in-memory ring buffer)
+    const activityLog: Array<{ event: string; data: unknown; timestamp: number }> = [];
+    const MAX_ACTIVITY = 200;
+    function logActivity(event: string, data: unknown) {
+        activityLog.unshift({ event, data, timestamp: Date.now() });
+        if (activityLog.length > MAX_ACTIVITY) activityLog.length = MAX_ACTIVITY;
+    }
+
     // Create Express app
     const app = express();
     app.use(express.json());
 
-    // Auth middleware
+    // Serve dashboard UI (before auth so it's publicly accessible)
+    const uiDir = path.resolve(__dirname, "../../ui");
+    app.use("/ui", express.static(uiDir));
+    app.get("/", (_req, res) => {
+        res.sendFile(path.join(uiDir, "index.html"));
+    });
+
+    // Auth middleware (skips /health and /ui)
     app.use(createAuthMiddleware(gatewayCfg.authToken));
 
     // ─── Health ────────────────────────────────────────────
@@ -202,6 +224,20 @@ export async function startGatewayServer(
 
     app.get("/api/agent/status", (_req, res) => {
         res.json(agent.getState());
+    });
+
+    // ─── Agent terminal output ────────────────────────────
+    app.get("/api/agent/terminal", (_req, res) => {
+        const state = agent.getState();
+        const output = state.alive ? captureSessionOutput(state.sessionName) : "";
+        res.json({ output, alive: state.alive });
+    });
+
+    // ─── Activity log ─────────────────────────────────────
+    app.get("/api/activity", (req, res) => {
+        const limitStr = typeof req.query?.limit === "string" ? req.query.limit : "50";
+        const limit = Math.min(parseInt(limitStr, 10) || 50, MAX_ACTIVITY);
+        res.json({ events: activityLog.slice(0, limit) });
     });
 
     // ─── Start HTTP + WebSocket ────────────────────────────

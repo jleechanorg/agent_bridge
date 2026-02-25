@@ -8,8 +8,8 @@ const log = createLogger("gateway/auth");
  */
 export function createAuthMiddleware(authToken: string | undefined) {
     return function authMiddleware(req: Request, res: Response, next: NextFunction): void {
-        // Skip auth for health endpoint
-        if (req.path === "/health") {
+        // Skip auth for health and UI endpoints
+        if (req.path === "/health" || req.path === "/" || req.path.startsWith("/ui")) {
             next();
             return;
         }

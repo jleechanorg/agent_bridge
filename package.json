@@ -1,13 +1,19 @@
 {
-  "name": "agent-orchestrator",
+  "name": "agent-gateway",
   "version": "0.1.0",
   "description": "Multi-channel AI gateway with CLI agent orchestration",
-  "keywords": ["ai", "orchestration", "slack", "gateway", "agents"],
+  "keywords": [
+    "ai",
+    "orchestration",
+    "slack",
+    "gateway",
+    "agents"
+  ],
   "license": "MIT",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "agent-orchestrator": "dist/entry.js"
+    "agent-gateway": "dist/entry.js"
   },
   "exports": {
     ".": "./dist/index.js"
@@ -17,6 +23,11 @@
     "dev": "node --import tsx src/entry.ts gateway",
     "start": "node dist/entry.js gateway",
     "check": "tsc --noEmit",
+    "test": "vitest run",
+    "test:unit": "vitest run tests/unit",
+    "test:e2e": "vitest run tests/e2e",
+    "test:api": "vitest run tests/api",
+    "test:browser": "vitest run tests/browser",
     "lint": "echo 'no linter configured yet'"
   },
   "dependencies": {
@@ -36,7 +47,8 @@
     "@types/node": "^25.3.0",
     "@types/ws": "^8.18.1",
     "tsx": "^4.21.0",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.18"
   },
   "engines": {
     "node": ">=22.12.0"
