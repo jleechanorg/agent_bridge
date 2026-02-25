@@ -1,0 +1,53 @@
+# Agent Orchestrator Configuration
+# Copy to config.yaml and edit values
+
+slack:
+  # Socket mode (recommended for development)
+  mode: socket
+  # Bot and app tokens can also be set via SLACK_BOT_TOKEN / SLACK_APP_TOKEN env vars
+  # botToken: xoxb-...
+  # appToken: xapp-...
+
+  # Optional: restrict which channels the bot listens in
+  # channels:
+  #   C01234ABCDE:
+  #     enabled: true
+
+  # Optional: restrict which users can talk to the bot
+  # allowFrom:
+  #   - U01234ABCDE
+
+gateway:
+  port: 18789
+  host: 0.0.0.0
+  # Auth token for API access (also settable via AUTH_TOKEN env var)
+  # authToken: your-secret
+
+agent:
+  # Which CLI to use: "claude" or "codex"
+  cli: claude
+  # Workspace directory for the agent
+  workspace: .
+  # Optional: override model
+  # model: claude-sonnet-4-20250514
+
+# MCP servers to register with the agent
+# These will be written into the agent's native config (e.g. ~/.claude/settings.json)
+mcpServers: {}
+  # example:
+  #   my-server:
+  #     command: node
+  #     args: ["/path/to/server.js"]
+  #     env:
+  #       API_KEY: "..."
+
+cron:
+  enabled: false
+  jobs: []
+  # Example job:
+  # - id: daily-summary
+  #   schedule: "0 9 * * *"
+  #   message: "Give me a daily summary of recent changes."
+
+session:
+  scope: per-sender
