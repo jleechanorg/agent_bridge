@@ -11,6 +11,7 @@ import { CronService } from "./cron.js";
 import { createWebSocketServer, type WsBroadcaster } from "./websocket.js";
 import { createLogger } from "../logger.js";
 import { formatError } from "../utils.js";
+import { MCPServer } from "./mcp-server.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -95,6 +96,31 @@ export async function startGatewayServer(
             },
         });
     });
+
+    // ─── MCP JSON-RPC ──────────────────────────────────────
+    const mcpServer = new MCPServer({
+        getHealth: () => ({
+            status: "ok",
+            uptime: process.uptime(),
+            agent: { alive: agent.getState().alive },
+        }),
+        getStatus: () => ({
+            uptime: process.uptime(),
+            agent: agent.getState(),
+            sessions: { total: sessions.count(), active: sessions.activeCount() },
+            cron: { jobs: cronService.listJobs() },
+        }),
+        listSessions: () => sessions.list().map((s) => ({ id: s.id, status: s.status })),
+        createSession: (opts: any) => sessions.create(opts),
+        sendChat: async (message: string) => {
+            const session = sessions.getOrCreate({});
+            const response = await agent.sendMessage(message);
+            return { sessionId: session.id, response };
+        },
+        getAgentStatus: () => agent.getState(),
+        listCronJobs: () => cronService.listJobs(),
+    });
+    app.post("/mcp", mcpServer.expressHandler());
 
     // ─── Chat ──────────────────────────────────────────────
     app.post("/api/chat", async (req, res) => {
