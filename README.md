@@ -125,7 +125,7 @@ cron:
 ## Testing
 
 ```bash
-pnpm test               # All 166 tests
+pnpm test                # Run full test suite
 pnpm test:unit           # Unit tests only
 pnpm test:e2e            # End-to-end tests
 pnpm test:api            # API contract tests
