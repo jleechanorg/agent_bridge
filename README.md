@@ -1,8 +1,30 @@
 # Agent Bridge
 
-A universal bridge between messaging platforms and AI coding agents. Route messages from Slack, Discord, Telegram, or webhooks to any CLI agent (Claude, Codex, Gemini, Cursor) running in isolated tmux sessions.
+> **Note**: This README describes the intended architecture. Some features are implemented, partially implemented, or scaffolded stubs. See the [Feature Status](#feature-status) section for details.
 
-## Architecture
+A universal bridge between messaging platforms and AI coding agents. Route messages from Slack, Discord, Telegram, or webhooks to any CLI agent (Claude, Codex) running in isolated tmux sessions.
+
+## Feature Status
+
+| Category | Status | Notes |
+|----------|--------|-------|
+| **Gateway API** | Real | All endpoints wired in `src/gateway/server.ts` |
+| **Slack Integration** | Real | Full implementation in `src/slack/provider.ts` |
+| **Claude Runner** | Real | `--dangerously-skip-permissions` flag |
+| **Codex Runner** | Real | `--full-auto` flag |
+| **Gemini Runner** | Partial | Class exists but not wired in runtime |
+| **Cursor Runner** | Partial | Class exists but not wired in runtime |
+| **Discord Channel** | Stub | Empty implementation, no actual connection |
+| **Telegram Channel** | Stub | Empty implementation, no actual connection |
+| **Webhook Channel** | Stub | Empty implementation, no actual connection |
+| **SQLite Sessions** | Not done | In-memory store is default; SQLite file exists but unused |
+| **Prometheus `/metrics`** | Not done | Metrics class exists but no HTTP route mounted |
+| **WebSocket `/ws`** | Real | Wired in `src/gateway/websocket.ts` |
+| **Dashboard `/`** | Real | UI served at `/ui`, redirect at `/` |
+
+## Architecture (Target State)
+
+> The diagram below shows the intended full architecture. Not all components are currently implemented. See [Feature Status](#feature-status) for what is actually running.
 
 ```
                         ┌─────────────────────────────────────────────────┐
@@ -54,30 +76,30 @@ cp .env.example .env
 pnpm start
 
 # Dashboard
-open http://localhost:19876
+open http://localhost:18789
 ```
 
 ## Configuration
 
 ### Environment Variables
 
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `AUTH_TOKEN` | Yes | Bearer token for API auth |
-| `SLACK_BOT_TOKEN` | No | Slack bot OAuth token |
-| `SLACK_APP_TOKEN` | No | Slack app-level token (socket mode) |
-| `GATEWAY_PORT` | No | Server port (default: 19876) |
-| `GATEWAY_HOST` | No | Server host (default: 127.0.0.1) |
-| `AGENT_CLI` | No | Agent CLI: `claude`, `codex`, `gemini`, `cursor` |
-| `AGENT_WORKSPACE` | No | Working directory for the agent |
-| `AGENT_MODEL` | No | Model override |
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `AUTH_TOKEN` | No | (none) | Bearer token for API auth (optional - API is open if unset) |
+| `SLACK_BOT_TOKEN` | No | (none) | Slack bot OAuth token |
+| `SLACK_APP_TOKEN` | No | (none) | Slack app-level token (socket mode) |
+| `GATEWAY_PORT` | No | 18789 | Server port |
+| `GATEWAY_HOST` | No | 0.0.0.0 | Server host |
+| `AGENT_CLI` | No | claude | Agent CLI: only `claude` and `codex` are wired |
+| `AGENT_WORKSPACE` | No | . | Working directory for the agent |
+| `AGENT_MODEL` | No | (none) | Model override |
 
 ### YAML Config
 
 ```yaml
 gateway:
-  port: 19876
-  host: 127.0.0.1
+  port: 18789
+  host: 0.0.0.0
 
 agent:
   cli: claude
@@ -99,28 +121,32 @@ cron:
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| `GET` | `/` | No | Dashboard UI |
+| `GET` | `/` | No | Dashboard UI (redirects to /ui) |
 | `GET` | `/health` | No | Health check |
+| `GET` | `/ui/*` | No | Static dashboard assets |
 | `GET` | `/api/status` | Yes | Agent + gateway status |
 | `POST` | `/api/chat` | Yes | Send message to agent |
 | `GET` | `/api/sessions` | Yes | List sessions |
 | `POST` | `/api/sessions` | Yes | Create session |
 | `GET` | `/api/sessions/:id` | Yes | Get session by ID |
 | `DELETE` | `/api/sessions/:id` | Yes | Close session |
-| `GET` | `/api/cron` | Yes | List cron jobs |
-| `POST` | `/api/cron/:name/trigger` | Yes | Trigger cron job |
-| `GET` | `/api/agent/terminal` | Yes | Stream terminal output |
+| `GET` | `/api/cron/jobs` | Yes | List cron jobs |
+| `POST` | `/api/cron/jobs/:id/run` | Yes | Trigger cron job |
+| `GET` | `/api/agent/status` | Yes | Get agent status |
+| `GET` | `/api/agent/terminal` | Yes | Get terminal output |
 | `POST` | `/api/agent/restart` | Yes | Restart agent |
+| `GET` | `/api/activity` | Yes | Activity log events |
+| `POST` | `/mcp` | Yes | MCP JSON-RPC endpoint |
 | `WS` | `/ws` | No | WebSocket events |
 
 ## Supported Runners
 
-| Runner | CLI | Flags | Use Case |
-|--------|-----|-------|----------|
-| Claude | `claude` | `--dangerously-skip-permissions` | General coding |
-| Codex | `codex` | `--full-auto` | Code generation |
-| Gemini | `gemini` | `--model <model>` | Google models |
-| Cursor | `cursor` | `--agent` | IDE-integrated |
+| Runner | CLI | Flags | Runtime Status |
+|--------|-----|-------|-----------------|
+| Claude | `claude` | `--dangerously-skip-permissions` | Implemented |
+| Codex | `codex` | `--full-auto` | Implemented |
+| Gemini | `gemini` | `--model <model>` | Stub (class exists, not wired) |
+| Cursor | `cursor` | `--agent` | Stub (class exists, not wired) |
 
 ## Testing
 
@@ -138,19 +164,19 @@ pnpm test:browser        # Dashboard UI tests
 src/
 ├── agent/
 │   ├── boot-check.ts        # BOOT.md validation
-│   ├── bridge.ts             # Tmux session management
+│   ├── bridge.ts             # Tmux session management (claude/codex only)
 │   ├── lifecycle.ts           # Agent lifecycle (start/stop/health)
 │   └── runners/
 │       ├── types.ts           # Runner interface + BaseRunner
 │       ├── claude.ts          # Claude CLI runner
 │       ├── codex.ts           # Codex CLI runner
-│       ├── gemini.ts          # Gemini CLI runner
-│       └── cursor.ts          # Cursor CLI runner
+│       ├── gemini.ts          # Gemini CLI runner (stub)
+│       └── cursor.ts          # Cursor CLI runner (stub)
 ├── channels/
 │   ├── types.ts               # Channel interface + router
-│   ├── discord.ts             # Discord provider
-│   ├── telegram.ts            # Telegram provider
-│   ├── webhook.ts             # Generic webhook
+│   ├── discord.ts             # Discord provider (stub)
+│   ├── telegram.ts            # Telegram provider (stub)
+│   ├── webhook.ts             # Generic webhook (stub)
 │   └── allowlist.ts           # User/channel filtering + rate limit
 ├── config/
 │   ├── loader.ts              # YAML + env config loader
@@ -159,12 +185,13 @@ src/
 ├── gateway/
 │   ├── server.ts              # Express HTTP + WebSocket server
 │   ├── auth.ts                # Bearer token middleware
-│   ├── sessions.ts            # Session store (in-memory)
-│   ├── store/sqlite.ts        # SQLite persistent sessions
+│   ├── sessions.ts            # Session store (in-memory, default)
+│   ├── store/sqlite.ts        # SQLite persistent sessions (not wired)
 │   ├── cron.ts                # Cron job scheduler
-│   └── websocket.ts           # WebSocket event broadcasting
+│   ├── websocket.ts           # WebSocket event broadcasting
+│   └── mcp-server.ts          # MCP JSON-RPC handler
 ├── monitoring/
-│   └── prometheus.ts          # Counters, gauges, /metrics
+│   └── prometheus.ts          # Metrics utilities (no /metrics route)
 ├── orchestration/
 │   ├── registry.ts            # Multi-agent registry
 │   ├── session-keys.ts        # Canonical keys + aliases
@@ -175,7 +202,8 @@ src/
 │   ├── provider.ts            # @slack/bolt integration
 │   └── handler.ts             # Message chunking + threading
 ├── errors.ts                  # Typed error hierarchy
-├── logger-pino.ts             # Pino structured logging
+├── logger.ts                 # Structured logging
+├── logger-pino.ts            # Pino structured logging (alternate)
 └── entry.ts                   # CLI entry point
 ui/
 ├── index.html                 # Dashboard HTML
