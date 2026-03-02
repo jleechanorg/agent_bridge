@@ -1,6 +1,8 @@
 # Agent Bridge
 
-A universal bridge between messaging platforms and AI coding agents. Route messages from Slack, Discord, Telegram, or webhooks to any CLI agent (Claude, Codex, Gemini, Cursor) running in isolated tmux sessions.
+A multi-channel AI gateway with CLI agent orchestration. Route messages from Slack to any CLI agent (Claude, Codex, Gemini, Cursor) running in isolated tmux sessions.
+
+**Stats:** ~8.6K lines · ~107 source files · ~38 test files
 
 ## Architecture
 
@@ -107,8 +109,8 @@ cron:
 | `POST` | `/api/sessions` | Yes | Create session |
 | `GET` | `/api/sessions/:id` | Yes | Get session by ID |
 | `DELETE` | `/api/sessions/:id` | Yes | Close session |
-| `GET` | `/api/cron` | Yes | List cron jobs |
-| `POST` | `/api/cron/:name/trigger` | Yes | Trigger cron job |
+| `GET` | `/api/cron/jobs` | Yes | List cron jobs |
+| `POST` | `/api/cron/jobs/:id/run` | Yes | Trigger cron job |
 | `GET` | `/api/agent/terminal` | Yes | Stream terminal output |
 | `POST` | `/api/agent/restart` | Yes | Restart agent |
 | `WS` | `/ws` | No | WebSocket events |
@@ -125,11 +127,11 @@ cron:
 ## Testing
 
 ```bash
-pnpm test               # All 166 tests
-pnpm test:unit           # Unit tests only
-pnpm test:e2e            # End-to-end tests
-pnpm test:api            # API contract tests
-pnpm test:browser        # Dashboard UI tests
+pnpm test               # Run all tests
+pnpm test:unit          # Unit tests only
+pnpm test:e2e           # End-to-end tests
+pnpm test:api           # API contract tests
+pnpm test:browser       # Dashboard UI tests
 ```
 
 ## Project Structure
