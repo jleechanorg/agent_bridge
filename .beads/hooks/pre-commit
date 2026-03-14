@@ -1,8 +1,11 @@
 #!/usr/bin/env sh
 # pre-commit: scan staged files for secrets via gitleaks
 if command -v gitleaks >/dev/null 2>&1; then
-    gitleaks protect --staged --config .gitleaks.toml 2>/dev/null \
-        || gitleaks protect --staged 2>&1
+    if [ -f .gitleaks.toml ]; then
+        gitleaks protect --staged --config .gitleaks.toml 2>&1
+    else
+        gitleaks protect --staged 2>&1
+    fi
     if [ $? -ne 0 ]; then
         echo "❌ gitleaks detected secrets in staged files. Commit blocked." >&2
         echo "   Fix leaks, then re-stage. To skip: git commit --no-verify" >&2
